@@ -1,0 +1,31 @@
+{
+	"name": "stylish-haskell",
+	"displayName": "stylish-haskell",
+	"description": "Integrates stylish-haskell with VS Code",
+	"version": "0.0.1",
+	"publisher": "vigoo",
+	"engines": {
+		"vscode": "^0.10.1"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onCommand:stylishHaskell.runOnCurrent"
+	],
+	"main": "./out/src/extension",
+	"contributes": {
+		"commands": [{
+			"command": "stylishHaskell.runOnCurrent",
+			"title": "Run stylish-haskell"
+		}]
+	},
+	"scripts": {
+		"vscode:prepublish": "node ./node_modules/vscode/bin/compile",
+		"compile": "node ./node_modules/vscode/bin/compile -watch -p ./"
+	},
+	"devDependencies": {
+		"typescript": "^1.6.2",
+		"vscode": "0.10.x"
+	}
+}
