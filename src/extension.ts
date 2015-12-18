@@ -21,6 +21,9 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function runStylishHaskell(fileName: string) {
+	var channel = vscode.window.createOutputChannel('stylish-haskell');
+	channel.clear();
+
 	proc.exec(
 		stylishHaskellCmd() + " -i " + fileName,
 		(error: Error, stdout: Buffer, stderr: Buffer) => {
@@ -28,11 +31,11 @@ function runStylishHaskell(fileName: string) {
 				vscode.window.showErrorMessage("Failed to run stylish-haskell");
 			}
 
-			if (stderr.length > 0) {
-				var channel = vscode.window.createOutputChannel('stylish-haskell');
-				channel.clear();
+			if (stderr.length > 0) {				
 				channel.appendLine(stderr.toString());
 				channel.show(vscode.ViewColumn.Two);
+			} else {
+				channel.hide();
 			}
 		}
 	);
