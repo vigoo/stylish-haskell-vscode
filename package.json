@@ -11,7 +11,8 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:stylishHaskell.runOnCurrent"
+		"onCommand:stylishHaskell.runOnCurrent",
+		"onLanguage:haskell"
 	],
 	"main": "./out/src/extension",
 	"contributes": {
@@ -23,6 +24,11 @@
 					"type": "string",
 					"default": "stylish-haskell",
 					"description": "Command line to execute stylish-haskell"
+				},
+				"stylishHaskell.runOnSave": {
+					"type": "boolean",
+					"default": true,
+					"description": "Run stylish-haskell on every save for Haskell files"
 				}
 			}
 		},

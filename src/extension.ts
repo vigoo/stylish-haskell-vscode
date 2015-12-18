@@ -5,28 +5,45 @@ export function activate(context: vscode.ExtensionContext) {
 
 	console.log('stylish-haskell activated'); 
 
-	var disposable = vscode.commands.registerCommand('stylishHaskell.runOnCurrent', () => {
-		proc.exec(
-			stylishHaskellCmd() + " -i " + vscode.window.activeTextEditor.document.fileName,
-			(error: Error, stdout: Buffer, stderr: Buffer) => {
-				if (error) {
-					vscode.window.showErrorMessage("Failed to run stylish-haskell");
-				}
-				
-				if (stderr.length > 0) {
-					var channel = vscode.window.createOutputChannel('stylish-haskell');
-					channel.clear();
-					channel.appendLine(stderr.toString());
-					channel.show(vscode.ViewColumn.Two);
-				}
-			}
-		);
+	var runOnCurrentCmd = vscode.commands.registerCommand('stylishHaskell.runOnCurrent', () => {
+		runStylishHaskell(vscode.window.activeTextEditor.document.fileName);		
 	});
+	context.subscriptions.push(runOnCurrentCmd);
 	
-	context.subscriptions.push(disposable);
+	
+	var onSave = vscode.workspace.onDidSaveTextDocument((e: vscode.TextDocument) => {
+		if (isRunOnSaveEnabled()) {
+			runStylishHaskell(e.fileName);
+		}
+	});
+		
+	context.subscriptions.push(onSave);	
+}
+
+function runStylishHaskell(fileName: string) {
+	proc.exec(
+		stylishHaskellCmd() + " -i " + fileName,
+		(error: Error, stdout: Buffer, stderr: Buffer) => {
+			if (error) {
+				vscode.window.showErrorMessage("Failed to run stylish-haskell");
+			}
+
+			if (stderr.length > 0) {
+				var channel = vscode.window.createOutputChannel('stylish-haskell');
+				channel.clear();
+				channel.appendLine(stderr.toString());
+				channel.show(vscode.ViewColumn.Two);
+			}
+		}
+	);
 }
 
 function stylishHaskellCmd() {
     var config = vscode.workspace.getConfiguration("stylishHaskell");
     return config["commandLine"];
+}
+
+function isRunOnSaveEnabled() {
+	var config = vscode.workspace.getConfiguration("stylishHaskell");
+	return config.get("runOnSave", true);
 }
