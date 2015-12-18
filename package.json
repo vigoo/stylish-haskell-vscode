@@ -2,7 +2,7 @@
 	"name": "stylish-haskell",
 	"displayName": "stylish-haskell",
 	"description": "Integrates stylish-haskell with VS Code",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "vigoo",
 	"engines": {
 		"vscode": "^0.10.1"
@@ -15,6 +15,17 @@
 	],
 	"main": "./out/src/extension",
 	"contributes": {
+		"configuration": {
+			"title": "stylish-haskell configuration",
+			"type": "object",
+			"properties": {
+				"stylishHaskell.commandLine": {
+					"type": "string",
+					"default": "stylish-haskell",
+					"description": "Command line to execute stylish-haskell"
+				}
+			}
+		},
 		"commands": [{
 			"command": "stylishHaskell.runOnCurrent",
 			"title": "Run stylish-haskell"
