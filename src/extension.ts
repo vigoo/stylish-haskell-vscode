@@ -25,7 +25,7 @@ function runStylishHaskell(fileName: string) {
 	channel.clear();
 
 	proc.exec(
-		stylishHaskellCmd() + " -i " + fileName,
+		stylishHaskellCmd() + " -i \"" + fileName + "\"",
 		(error: Error, stdout: Buffer, stderr: Buffer) => {
 			if (error) {
 				vscode.window.showErrorMessage("Failed to run stylish-haskell");
