@@ -32,6 +32,28 @@
 				}
 			}
 		},
+        "languages": [
+            {
+                "id": "haskell",
+                "aliases": [
+                    "Haskell",
+                    "haskell"
+                ],
+                "extensions": [
+                    ".hs"
+                ]
+            },
+            {
+                "id": "cabal",
+                "aliases": [
+                    "Cabal",
+                    "cabal"
+                ],
+                "extensions": [
+                    ".cabal"
+                ]
+            }
+        ],
 		"commands": [{
 			"command": "stylishHaskell.runOnCurrent",
 			"title": "Run stylish-haskell"
