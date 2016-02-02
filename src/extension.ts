@@ -25,11 +25,20 @@ function runStylishHaskell(fileName: string) {
 		var channel = vscode.window.createOutputChannel('stylish-haskell');
 		channel.clear();
 
+		var cmd = stylishHaskellCmd() + " \"" + fileName + "\"";
+		console.log('stylish-haskell extension running: ' + cmd)
 		proc.exec(
-			stylishHaskellCmd() + " -i \"" + fileName + "\"",
+			cmd,
 			(error: Error, stdout: Buffer, stderr: Buffer) => {
 				if (error) {
 					vscode.window.showErrorMessage("Failed to run stylish-haskell");
+				} else {
+					// Workaround for https://github.com/Microsoft/vscode/issues/2592
+					vscode.workspace.openTextDocument(fileName).then((doc: vscode.TextDocument) => {
+						let edit = new vscode.WorkspaceEdit();
+						edit.replace(doc.uri, new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)), stdout.toString());
+						vscode.workspace.applyEdit(edit);
+					});
 				}
 
 				if (stderr.length > 0) {				

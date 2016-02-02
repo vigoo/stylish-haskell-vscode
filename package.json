@@ -2,7 +2,7 @@
 	"name": "stylish-haskell",
 	"displayName": "stylish-haskell",
 	"description": "Integrates stylish-haskell with VS Code",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"publisher": "vigoo",
 	"engines": {
 		"vscode": "^0.10.1"
