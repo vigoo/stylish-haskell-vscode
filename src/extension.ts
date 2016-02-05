@@ -6,13 +6,18 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log('stylish-haskell activated'); 
 
 	var runOnCurrentCmd = vscode.commands.registerCommand('stylishHaskell.runOnCurrent', () => {
-		runStylishHaskell(vscode.window.activeTextEditor.document.fileName);		
+		const doc = vscode.window.activeTextEditor.document;
+        if (isTargetDocument(doc)) {
+            runStylishHaskell(doc.fileName);   
+        } else {
+            vscode.window.showErrorMessage("This is not haskell document");
+        }
 	});
 	context.subscriptions.push(runOnCurrentCmd);
 	
 	
 	var onSave = vscode.workspace.onDidSaveTextDocument((e: vscode.TextDocument) => {
-		if (isRunOnSaveEnabled()) {
+		if (isTargetDocument(e) && isRunOnSaveEnabled()) {
 			runStylishHaskell(e.fileName);
 		}
 	});
@@ -60,4 +65,8 @@ function stylishHaskellCmd() {
 function isRunOnSaveEnabled() {
 	var config = vscode.workspace.getConfiguration("stylishHaskell");
 	return config.get("runOnSave", true);
+}
+
+function isTargetDocument(doc: vscode.TextDocument) {
+    return doc.languageId == "haskell";
 }
