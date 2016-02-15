@@ -35,9 +35,15 @@ function runStylishHaskell(fileName: string) {
 				} else {
 					// Workaround for https://github.com/Microsoft/vscode/issues/2592
 					vscode.workspace.openTextDocument(fileName).then((doc: vscode.TextDocument) => {
-						let edit = new vscode.WorkspaceEdit();
-						edit.replace(doc.uri, new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)), stdout.toString());
-						vscode.workspace.applyEdit(edit);
+						let existingSource = doc.getText();
+						let newSource = stdout.toString();
+						
+						if (existingSource != newSource) {
+							let edit = new vscode.WorkspaceEdit();
+							edit.replace(doc.uri, new vscode.Range(doc.positionAt(0), doc.positionAt(existingSource.length)), stdout.toString());
+							vscode.workspace.applyEdit(edit);
+							doc.save();
+						}
 					});
 				}
 
