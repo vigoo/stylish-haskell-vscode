@@ -4,25 +4,24 @@ import * as proc from 'child_process';
 export function activate(context: vscode.ExtensionContext) {
 
 	console.log('stylish-haskell activated'); 
+	var channel = vscode.window.createOutputChannel('stylish-haskell');	
 
 	var runOnCurrentCmd = vscode.commands.registerCommand('stylishHaskell.runOnCurrent', () => {
-		runStylishHaskell(vscode.window.activeTextEditor.document.fileName);		
+		runStylishHaskell(vscode.window.activeTextEditor.document.fileName, channel);
 	});
 	context.subscriptions.push(runOnCurrentCmd);
 	
-	
 	var onSave = vscode.workspace.onDidSaveTextDocument((e: vscode.TextDocument) => {
 		if (isRunOnSaveEnabled()) {
-			runStylishHaskell(e.fileName);
+			runStylishHaskell(e.fileName, channel);
 		}
 	});
 		
-	context.subscriptions.push(onSave);	
+	context.subscriptions.push(onSave);
 }
 
-function runStylishHaskell(fileName: string) {
+function runStylishHaskell(fileName: string, channel: vscode.OutputChannel) {
 	if (fileName.endsWith(".hs")) {
-		var channel = vscode.window.createOutputChannel('stylish-haskell');
 		channel.clear();
 
 		var cmd = stylishHaskellCmd() + " \"" + fileName + "\"";
