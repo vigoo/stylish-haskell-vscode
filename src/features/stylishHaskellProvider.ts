@@ -2,7 +2,7 @@
 
 import * as vscode from 'vscode';
 
-export default class StylishHaskellProvider implements vscode.CodeActionProvider {
+export default class StylishHaskellProvider {
 	private diagnosticCollection: vscode.DiagnosticCollection;
 	private regex: RegExp;
 
@@ -16,7 +16,7 @@ export default class StylishHaskellProvider implements vscode.CodeActionProvider
 		this.diagnosticCollection.dispose();
 	}
 
-	public processOutput(file: vscode.Uri, output: String): void {
+	public processOutput(file: vscode.Uri, output: string): void {
 		// Example output:
 		// Language.Haskell.Stylish.Parse.parseModule: could not parse /Users/vigoo/GitHub/private/bari/tmp/Test.hs: ParseFailed (SrcLoc "<unknown>.hs" 3 1) "Parse error: main"
 
