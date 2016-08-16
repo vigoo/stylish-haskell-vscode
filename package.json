@@ -29,7 +29,12 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Run stylish-haskell on every save for Haskell files"
-				}
+				},
+                "stylishHaskell.showConsoleOnError": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show the command's output in the debug console on error"
+                }
 			}
 		},
 		"commands": [{

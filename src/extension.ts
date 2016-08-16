@@ -1,27 +1,34 @@
 import * as vscode from 'vscode'; 
 import * as proc from 'child_process';
-const path = require("path");
+import * as path from 'path';
+
+import StylishHaskellProvider from './features/StylishHaskellProvider';
 
 export function activate(context: vscode.ExtensionContext) {
 
 	console.log('stylish-haskell activated'); 
+
+	var provider = new StylishHaskellProvider();
+	provider.activate(context.subscriptions);
+
 	var channel = vscode.window.createOutputChannel('stylish-haskell');	
 
 	var runOnCurrentCmd = vscode.commands.registerCommand('stylishHaskell.runOnCurrent', () => {
-		runStylishHaskell(vscode.window.activeTextEditor.document.fileName, channel);
+		var doc = vscode.window.activeTextEditor.document;
+		runStylishHaskell(doc.fileName, doc.uri, channel, provider);
 	});
 	context.subscriptions.push(runOnCurrentCmd);
 	
 	var onSave = vscode.workspace.onDidSaveTextDocument((e: vscode.TextDocument) => {
 		if (isRunOnSaveEnabled()) {
-			runStylishHaskell(e.fileName, channel);
+			runStylishHaskell(e.fileName, e.uri, channel, provider);
 		}
 	});
 		
 	context.subscriptions.push(onSave);
 }
 
-function runStylishHaskell(fileName: string, channel: vscode.OutputChannel) {
+function runStylishHaskell(fileName: string, uri: vscode.Uri, channel: vscode.OutputChannel, provider: StylishHaskellProvider) {
 	if (fileName.endsWith(".hs")) {
 		channel.clear();
 
@@ -58,11 +65,16 @@ function runStylishHaskell(fileName: string, channel: vscode.OutputChannel) {
 					});
 				}
 
-				if (stderr.length > 0) {				
-					channel.appendLine(stderr.toString());
-					channel.show(vscode.ViewColumn.Two);
+				if (stderr.length > 0) {
+					if (isShowConsoleOnErrorEnabled()) {				
+						channel.appendLine(stderr.toString());
+						channel.show(vscode.ViewColumn.Two);
+					}
+
+					provider.processOutput(uri, stderr.toString());
 				} else {
 					channel.hide();
+					provider.reset();
 				}
 			}
 		);
@@ -77,4 +89,9 @@ function stylishHaskellCmd() {
 function isRunOnSaveEnabled() {
 	var config = vscode.workspace.getConfiguration("stylishHaskell");
 	return config.get("runOnSave", true);
+}
+
+function isShowConsoleOnErrorEnabled() {
+	var config = vscode.workspace.getConfiguration("stylishHaskell");
+	return config.get("showConsoleOnError", true);
 }
