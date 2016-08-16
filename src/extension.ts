@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'; 
 import * as proc from 'child_process';
+const path = require("path");
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -25,9 +26,20 @@ function runStylishHaskell(fileName: string, channel: vscode.OutputChannel) {
 		channel.clear();
 
 		var cmd = stylishHaskellCmd() + " \"" + fileName + "\"";
-		console.log('stylish-haskell extension running: ' + cmd)
+		var dir = path.dirname(fileName);
+		var options = {
+			encoding: 'utf8',
+			timeout: 0,
+			maxBuffer: 200*1024,
+			killSignal: 'SIGTERM',
+			cwd: dir,
+			env: null
+		};
+
+		console.log('stylish-haskell extension running: ' + cmd + ' in directory ' + dir)
 		proc.exec(
 			cmd,
+			options,
 			(error: Error, stdout: Buffer, stderr: Buffer) => {
 				if (error) {
 					vscode.window.showErrorMessage("Failed to run stylish-haskell");
