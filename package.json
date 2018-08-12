@@ -5,7 +5,7 @@
 	"version": "0.0.9",
 	"publisher": "vigoo",
 	"engines": {
-		"vscode": "^0.10.1"
+		"vscode": "^1.26.0"
 	},
 	"categories": [
 		"Other"
@@ -14,7 +14,7 @@
 		"onCommand:stylishHaskell.runOnCurrent",
 		"onLanguage:haskell"
 	],
-	"main": "./out/src/extension",
+	"main": "./out/extension",
 	"contributes": {
 		"configuration": {
 			"title": "stylish-haskell configuration",
@@ -30,24 +30,30 @@
 					"default": true,
 					"description": "Run stylish-haskell on every save for Haskell files"
 				},
-                "stylishHaskell.showConsoleOnError": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Show the command's output in the debug console on error"
-                }
+				"stylishHaskell.showConsoleOnError": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show the command's output in the debug console on error"
+				}
 			}
 		},
-		"commands": [{
-			"command": "stylishHaskell.runOnCurrent",
-			"title": "Run stylish-haskell"
-		}]
+		"commands": [
+			{
+				"command": "stylishHaskell.runOnCurrent",
+				"title": "Run stylish-haskell"
+			}
+		]
 	},
 	"scripts": {
-		"vscode:prepublish": "node ./node_modules/vscode/bin/compile",
-		"compile": "node ./node_modules/vscode/bin/compile -watch -p ./"
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"postinstall": "node ./node_modules/vscode/bin/install"
 	},
 	"devDependencies": {
-		"typescript": "^1.6.2",
-		"vscode": "0.10.x"
+		"@types/mocha": "^5.2.5",
+		"@types/node": "^10.7.1",
+		"typescript": "^2.6.1",
+		"vscode": "^1.1.21"
 	}
 }

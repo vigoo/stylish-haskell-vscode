@@ -1,106 +1,138 @@
-import * as vscode from 'vscode';
-import * as proc from 'child_process';
-import * as path from 'path';
+import * as vscode from "vscode";
+import * as proc from "child_process";
+import * as path from "path";
 
-import StylishHaskellProvider from './features/StylishHaskellProvider';
+import StylishHaskellProvider from "./features/stylishHaskellProvider";
 
-//tracks if the save recieved is due to our own doc.save();
-let mySave = false;
+export class HaskellDocumentFormattingEditProvider 
+	implements vscode.DocumentFormattingEditProvider, vscode.DocumentRangeFormattingEditProvider {
+	private config: vscode.WorkspaceConfiguration;
+	private commandLine: string;
+	private isShowConsoleOnErrorEnabled: boolean;
+	private provider: StylishHaskellProvider;
+	private channel: vscode.OutputChannel;
 
-export function activate(context: vscode.ExtensionContext) {
-
-	console.log('stylish-haskell activated');
-
-	var provider = new StylishHaskellProvider();
-	provider.activate(context.subscriptions);
-
-	var channel = vscode.window.createOutputChannel('stylish-haskell');
-
-	var runOnCurrentCmd = vscode.commands.registerCommand('stylishHaskell.runOnCurrent', () => {
-		var doc = vscode.window.activeTextEditor.document;
-		runStylishHaskell(doc.fileName, doc.uri, channel, provider);
-	});
-	context.subscriptions.push(runOnCurrentCmd);
-
-	var onSave = vscode.workspace.onDidSaveTextDocument((e: vscode.TextDocument) => {
-		if (isRunOnSaveEnabled()) {
-			runStylishHaskell(e.fileName, e.uri, channel, provider);
-		}
-	});
-
-	context.subscriptions.push(onSave);
-}
-
-function runStylishHaskell(fileName: string, uri: vscode.Uri, channel: vscode.OutputChannel, provider: StylishHaskellProvider) {
-	//guard to avoid save loop
-	if (mySave) {
-		mySave = false;
-		return;
+	private handleSuccess = (edits: vscode.TextEdit[]) => {
+		this.provider.reset();
+		this.channel.clear();
+		return edits;
 	}
-	if (fileName.endsWith(".hs")) {
-		channel.clear();
 
-		var cmd = stylishHaskellCmd() + " \"" + fileName + "\"";
-		var dir = path.dirname(fileName);
-		var options = {
-			encoding: 'utf8',
+	private handleError = (document: vscode.TextDocument) => (err: string) => {
+		if (!err) {
+			vscode.window.showErrorMessage("Failed to run stylish-haskell");
+		} else if (err.length > 0) {
+			if (this.isShowConsoleOnErrorEnabled) {
+				this.channel.appendLine(err);
+				this.channel.show(vscode.ViewColumn.Two);
+			}
+
+			this.provider.processOutput(document.uri, err);
+		} else {
+			this.channel.hide();
+			this.provider.reset();
+		}
+	}
+
+	constructor(
+		provider: StylishHaskellProvider,
+		channel: vscode.OutputChannel
+	) {
+		this.config = vscode.workspace.getConfiguration("stylishHaskell");
+
+		this.commandLine = this.config["commandLine"];
+		this.isShowConsoleOnErrorEnabled = this.config.get("showConsoleOnError", true);
+
+		this.provider = provider;
+		this.channel = channel;
+	}
+
+	public provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.ProviderResult<vscode.TextEdit[]> {
+		return this.format(document).then(
+			this.handleSuccess,
+			this.handleError(document)
+		);
+	}
+
+	public provideDocumentRangeFormattingEdits(document: vscode.TextDocument, range: vscode.Range): vscode.ProviderResult<vscode.TextEdit[]> {
+		return this.format(document, range).then(
+			this.handleSuccess,
+			this.handleError(document)
+		);
+	}
+
+	private format(document: vscode.TextDocument, range?: vscode.Range): Thenable<vscode.TextEdit[]> {
+		const cmd = this.commandLine;
+		const dir = path.dirname(document.fileName);
+		const options = {
+			encoding: "utf8",
 			timeout: 0,
 			maxBuffer: 200 * 1024,
-			killSignal: 'SIGTERM',
+			killSignal: "SIGTERM",
 			cwd: dir,
 			env: null
 		};
-
-		console.log('stylish-haskell extension running: ' + cmd + ' in directory ' + dir)
-		proc.exec(
-			cmd,
-			options,
-			(error: Error, stdout: Buffer, stderr: Buffer) => {
-				if (error) {
-					vscode.window.showErrorMessage("Failed to run stylish-haskell");
-				} else {
-					// Workaround for https://github.com/Microsoft/vscode/issues/2592
-					vscode.workspace.openTextDocument(fileName).then((doc: vscode.TextDocument) => {
-						let existingSource = doc.getText();
-						let newSource = stdout.toString();
-
-						if (existingSource != newSource) {
-							let edit = new vscode.WorkspaceEdit();
-							edit.replace(doc.uri, new vscode.Range(doc.positionAt(0), doc.positionAt(existingSource.length)), stdout.toString());
-							vscode.workspace.applyEdit(edit);
-							mySave = true;
-							doc.save();
-						}
-					});
+	
+		return new Promise<vscode.TextEdit[]>((resolve, reject) => {
+			let stdout: Array<string> = [];
+			let stderr: Array<string> = [];
+	
+			const p = proc.spawn(cmd, [], options);
+			p.stdout.setEncoding("utf8");
+			p.stdout.on("data", data => stdout.push(data.toString()));
+			p.stderr.on("data", data => stderr.push(data.toString()));
+			p.on("error", err => reject());
+			p.on("close", code => {
+				if (code !== 0) {
+					return reject(stderr.join(""));
 				}
-
-				if (stderr.length > 0) {
-					if (isShowConsoleOnErrorEnabled()) {
-						channel.appendLine(stderr.toString());
-						channel.show(vscode.ViewColumn.Two);
-					}
-
-					provider.processOutput(uri, stderr.toString());
-				} else {
-					channel.hide();
-					provider.reset();
-				}
-			}
-		);
+	
+				const fileStart = new vscode.Position(0, 0);
+				const fileEnd = document.lineAt(document.lineCount - 1).range.end;
+				const fileRange = range || new vscode.Range(fileStart, fileEnd);
+				const textEdits = [
+					new vscode.TextEdit(
+						fileRange,
+						stdout.join("")
+					)
+				];
+	
+				return resolve(textEdits);
+			});
+			p.stdin.end(document.getText(range));
+		});
 	}
 }
 
-function stylishHaskellCmd() {
-	var config = vscode.workspace.getConfiguration("stylishHaskell");
-	return config["commandLine"];
-}
+export function activate(context: vscode.ExtensionContext) {
+	console.log("stylish-haskell activated");
 
-function isRunOnSaveEnabled() {
-	var config = vscode.workspace.getConfiguration("stylishHaskell");
-	return config.get("runOnSave", true);
-}
+	const diagnostic = new StylishHaskellProvider();
+	diagnostic.activate(context.subscriptions);
 
-function isShowConsoleOnErrorEnabled() {
-	var config = vscode.workspace.getConfiguration("stylishHaskell");
-	return config.get("showConsoleOnError", true);
+	const channel = vscode.window.createOutputChannel("stylish-haskell");
+	const provider = new HaskellDocumentFormattingEditProvider(diagnostic, channel);
+
+	const selector: vscode.DocumentSelector = [
+		{ language: "haskell", scheme: "file" },
+		{ language: "haskell", scheme: "untitled"}
+	];
+	const formattingProvider = vscode.languages.registerDocumentFormattingEditProvider(
+		selector,
+		provider
+	);
+	context.subscriptions.push(formattingProvider);
+
+	const rangeFormattingProvider = vscode.languages.registerDocumentRangeFormattingEditProvider(
+		selector,
+		provider
+	);
+	context.subscriptions.push(rangeFormattingProvider);
+
+	const runOnCommand = vscode.commands.registerTextEditorCommand("stylishHaskell.runOnCurrent", editor => {
+		if (editor.document.languageId === "haskell") {
+			vscode.commands.executeCommand("editor.action.formatDocument");
+		}
+	});
+	context.subscriptions.push(runOnCommand);
 }
