@@ -63,7 +63,8 @@ export class HaskellDocumentFormattingEditProvider
 
 	private format(document: vscode.TextDocument, range?: vscode.Range): Thenable<vscode.TextEdit[]> {
 		const cmd = this.commandLine;
-		const dir = path.dirname(document.fileName);
+		const workspace = vscode.workspace.workspaceFolders[0];
+		const dir = workspace ? workspace.uri.fsPath : path.dirname(document.fileName);
 		const options = {
 			encoding: "utf8",
 			timeout: 0,
@@ -81,7 +82,7 @@ export class HaskellDocumentFormattingEditProvider
 			p.stdout.setEncoding("utf8");
 			p.stdout.on("data", data => stdout.push(data.toString()));
 			p.stderr.on("data", data => stderr.push(data.toString()));
-			p.on("error", err => reject());
+			p.on("error", err => reject(err.toString()));
 			p.on("close", code => {
 				if (code !== 0) {
 					return reject(stderr.join(""));
