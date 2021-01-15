@@ -4,6 +4,7 @@
 	"description": "Integrates stylish-haskell with VS Code",
 	"version": "0.0.10",
 	"publisher": "vigoo",
+	"icon": "logo.png",
 	"engines": {
 		"vscode": "^1.26.0"
 	},
